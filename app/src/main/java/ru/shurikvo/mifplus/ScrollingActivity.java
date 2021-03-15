@@ -1,6 +1,7 @@
 package ru.shurikvo.mifplus;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -26,20 +27,24 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import ru.shurikvo.apdu.ApduMaster;
 import ru.shurikvo.utils.ByteMatter;
 
-public class ScrollingActivity extends AppCompatActivity {
+public class ScrollingActivity extends AppCompatActivity implements SettingDialog.MyDialogFragmentListener {
 
     private NfcAdapter nfcAdapter;
     private PendingIntent pendingIntent;
     private final static String TAG = "nfc_test";
 
-    private String messageInfo;
+    private String messageInfo, transfer = "N";
     private ByteMatter byt = new ByteMatter();
+    private SettingDialog dialog = new SettingDialog();
 
     private AlertDialog mDialog;
 
@@ -175,28 +180,11 @@ public class ScrollingActivity extends AppCompatActivity {
 
                 short nSak = nfcATag.getSak();
                 sb.append(String.format("SAK: %02X", nSak)).append('\n');
-
-                /*try {
-                    nfcATag.setTimeout(5000);
-                    nfcATag.connect();
-
-                    byte[] bResp,
-                            bAPDU = {(byte)0xA8,(byte)0x00,(byte)0x90,(byte)0x00,(byte)0x11,(byte)0x22,(byte)0x33,(byte)0x44,(byte)0x55,(byte)0x66,(byte)0x77,(byte)0x88,(byte)0x99,(byte)0xAA,(byte)0xBB,(byte)0xCC,(byte)0xDD,(byte)0xEE,(byte)0xFF};
-                    sb.append(">> ").append(byt.toHexString(bAPDU)).append('\n');
-                    bResp = nfcATag.transceive(bAPDU);
-                    sb.append("<< ").append(byt.toHexString(bResp)).append('\n');
-
-                    nfcATag.close();
-                } catch (IOException ex) {
-                    sb.append('\n').append(ex.getMessage());
-                    messageInfo += "\n" + sb.toString();
-                    return sb.toString();
-                }*/
             }
 
             if (tech.equals(IsoDep.class.getName())) {
                 int RC;
-                String sCmd, sResp;
+                String sCmd, sResp, sType = "Не распознан";
                 sb.append('\n');
 
                 ApduMaster apdu = new ApduMaster();
@@ -216,52 +204,61 @@ public class ScrollingActivity extends AppCompatActivity {
                     return sb.toString();
                 }
                 sb.append(apdu.message).append('\n');
-                sCmd = "A80190FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-                sResp = apdu.sendApdu(sCmd);
-                if(apdu.isError) {
-                    sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
-                    messageInfo += "\n" + sb.toString();
-                    return sb.toString();
+                if(sResp.length() >= 2)
+                    if(sResp.substring(0,2).equals("90"))
+                        sType = "Mifare Plus SL0";
+                sb.append("Тип Mifare: ").append(sType).append('\n');
+                if(transfer.equals("Y")) {
+                    sCmd = "A80190FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+                    sResp = apdu.sendApdu(sCmd);
+                    if (apdu.isError) {
+                        sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
+                        messageInfo += "\n" + sb.toString();
+                        return sb.toString();
+                    }
+                    sb.append(apdu.message).append('\n');
+                    sCmd = "A80290FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+                    sResp = apdu.sendApdu(sCmd);
+                    if (apdu.isError) {
+                        sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
+                        messageInfo += "\n" + sb.toString();
+                        return sb.toString();
+                    }
+                    sb.append(apdu.message).append('\n');
+                    sCmd = "A80390FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+                    sResp = apdu.sendApdu(sCmd);
+                    if (apdu.isError) {
+                        sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
+                        messageInfo += "\n" + sb.toString();
+                        return sb.toString();
+                    }
+                    sb.append(apdu.message).append('\n');
+                    sCmd = "A80490FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+                    sResp = apdu.sendApdu(sCmd);
+                    if (apdu.isError) {
+                        sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
+                        messageInfo += "\n" + sb.toString();
+                        return sb.toString();
+                    }
+                    sb.append(apdu.message).append('\n');
+                    sCmd = "AA";
+                    sResp = apdu.sendApdu(sCmd);
+                    if (apdu.isError) {
+                        sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
+                        messageInfo += "\n" + sb.toString();
+                        return sb.toString();
+                    }
+                    sb.append(apdu.message).append('\n');
+                    if(sResp.length() >= 2) {
+                        if (sResp.substring(0, 2).equals("90"))
+                            sb.append("Перевод в SL1 завершен").append('\n');
+                        else
+                            sb.append("Перевод в SL1 не завершен").append('\n');
+                    } else {
+                        sb.append("Перевод в SL1 не завершен").append('\n');
+                    }
                 }
-                sb.append(apdu.message).append('\n');
-                sCmd = "A80290FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-                sResp = apdu.sendApdu(sCmd);
-                if(apdu.isError) {
-                    sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
-                    messageInfo += "\n" + sb.toString();
-                    return sb.toString();
-                }
-                sb.append(apdu.message).append('\n');
-                sCmd = "A80390FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-                sResp = apdu.sendApdu(sCmd);
-                if(apdu.isError) {
-                    sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
-                    messageInfo += "\n" + sb.toString();
-                    return sb.toString();
-                }
-                sb.append(apdu.message).append('\n');
-                sCmd = "A80490FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-                sResp = apdu.sendApdu(sCmd);
-                if(apdu.isError) {
-                    sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
-                    messageInfo += "\n" + sb.toString();
-                    return sb.toString();
-                }
-                sb.append(apdu.message).append('\n');
-                sCmd = "AA";
-                sResp = apdu.sendApdu(sCmd);
-                if(apdu.isError) {
-                    sb.append("Ошибка APDU: ").append(apdu.message).append('\n');
-                    messageInfo += "\n" + sb.toString();
-                    return sb.toString();
-                }
-                sb.append(apdu.message).append('\n');
-
                 apdu.close();;
-
-               /*PSLister pli = new PSLister();
-                sb.append(pli.getCardInfo(IsoDep.get(tag)));
-                sb.append(pli.getPSList(IsoDep.get(tag)));*/
             }
         }
         //Log.v("test",sb.toString());
@@ -339,16 +336,23 @@ public class ScrollingActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            showMessage(R.string.app_name , R.string.action_settings);
+            dialog = new SettingDialog();
+            dialog.transfer = this.transfer;
+            dialog.show(getSupportFragmentManager(), "custom");
+            this.transfer = dialog.transfer;
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onReturnValue(String foo) {
+        if(foo.equals("transfer:Y"))
+            this.transfer = "Y";
+        if(foo.equals("transfer:N"))
+            this.transfer = "N";
     }
 }
