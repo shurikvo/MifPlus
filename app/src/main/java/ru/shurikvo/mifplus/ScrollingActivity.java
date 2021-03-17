@@ -38,14 +38,16 @@ import ru.shurikvo.utils.ByteMatter;
 
 public class ScrollingActivity extends AppCompatActivity implements SettingDialog.MyDialogFragmentListener {
 
-    private NfcAdapter nfcAdapter;
-    private PendingIntent pendingIntent;
     private final static String TAG = "nfc_test";
+    private static final String KEY_LOG = "LOG";
+    private static final String KEY_SET_TRANSFER = "SET_TRANSFER";
 
     private String messageInfo, transfer = "N";
     private ByteMatter byt = new ByteMatter();
     private SettingDialog dialog = new SettingDialog();
 
+    private NfcAdapter nfcAdapter;
+    private PendingIntent pendingIntent;
     private AlertDialog mDialog;
 
     @Override
@@ -89,8 +91,22 @@ public class ScrollingActivity extends AppCompatActivity implements SettingDialo
         }
         pendingIntent = PendingIntent.getActivity(this,0,
                 new Intent(this,this.getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),0);
+
+        if (savedInstanceState != null) {
+            transfer = savedInstanceState.getString(KEY_SET_TRANSFER, "");
+            messageInfo = savedInstanceState.getString(KEY_LOG, "N");
+            showInfo();
+        }
     }
-    //----------------------------------------------------------------------------------------------
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString(KEY_SET_TRANSFER, transfer);
+        outState.putString(KEY_LOG, messageInfo);
+    }
+
     @Override
     protected void onResume() {
 
